@@ -35,6 +35,11 @@ The set $\mathcal{X}$ is called the **feature space** and the set $\mathcal{Y}$ 
 We assume that there exists a **labeling function** $f: \mathcal{X} \rightarrow \mathcal{Y}$ such that $y_i = f(x_i)$, which is **unknown** to us.
 
 We further assume that each observation in the data set is an **independent and identically distributed (i.i.d.)** sample from an unknown data distribution $\mathcal{D}$. An i.i.d. data set is denoted as $S := \{(x_i, y_i) \overset{i.i.d.}{\sim} \mathcal{D} : i \in [m]\}$. 
+> [!Notes]+  
+> # I. I. D.  
+> - distributed Betyder  er statik ord, at der valgt nogle input tilfældigt. 
+> - independet betyder  at data set er uafhænginge af hinanden række følge er lige meget, 
+> - identically betyder at de bliver gentaget 
 
 Imagine playing backgammon. Each roll of the dice is a sample. These are independent samples if consecutive rolls do not influence each other. The samples are identically distributed if we use the same dice throughout the game. The i.i.d. assumption is at the heart of machine learning. The same process needs to be repeated for an agent to be able to learn it, just like us humans. 
 
@@ -52,12 +57,16 @@ We define what we mean by an **accurate prediction** via a **loss function**: $\
 
 1. the **zero-one loss** defined as $\ell(y,y') := \mathds{1}(y \neq y')$ for classification, and
 2. the **squared error** defined as $\ell(y,y') := (y-y')^2$ for regression.
+>[!notes]
+>$\ell$ loss function
 
 Here $\mathds{1}$ is the indicator function that returns $1$ if the predicate in its argument holds (e.g. if $y$ differs from $y'$) and $0$ otherwise. Put together, we are interested in a **learning algorithm** $A(\cdot)$ that takes a data set $S$ as input and returns a hypothesis. Let us denote this hypothesis as $h_S$, where the subscript $S$ is to highlight its dependence on the data set. Then we can express the learning process as $h_S \gets A(S)$. We expect from this algorithm to minimize the **generalization error (true risk)**, which is defined for zero-one loss as:
 
 $$R(h) := \mathbb{E}_{x \sim \mathcal{D}_{\mathcal{X}}}\big[ \ell(f(x), h(x)) \big] = P_{x \sim \mathcal{D}_{\mathcal{X}}}\big(f(x) \neq h(x)\big),$$
 
 where the second equality is specific to the zero-one loss.
+> [!Notes]
+> $\mathbb{E}$ forvent udfald probalyt thery vi har ikke lærtet endnu
 
 Some intuition before we dissect the notation. A new application of our program will keep receiving input observations after we ship it, and we care about how often it will be wrong on *those*, not on the ones we have already collected. Since future inputs arrive according to the same chances as the ones in $S$ (this is exactly what the i.i.d. assumption buys us), the fair way to score a hypothesis is: *average its loss over the chances of seeing each input*. That is all $R(h)$ is — a weighted average of the pointwise losses $\ell(f(x), h(x))$, one weight per input $x$, with inputs we are likely to see counted more heavily than rare ones. If the loss is the zero-one loss, this average counts each input where $h$ and $f$ disagree, weighted in the same way; an average of zeros and ones weighted by non-negative chances that sum to one is precisely a probability, which is the second equality above.
 
@@ -68,6 +77,8 @@ Two remarks unpack the expectation symbol. First, $\mathcal{D}_{\mathcal{X}}$, r
 The goal of a learning algorithm $A$ is to find the hypothesis that minimizes the generalization error:
 
 $$h_* := \arg \min_{h \in \mathcal{H}} R(h).$$
+> [!notes]
+> $\arg \min$ betyder hvilket værdi dr skal gives til en funktion $f(x)$ for at det giver den minsten værdi
 
 We cannot solve this optimization problem because we do not know $\mathcal{D}$ and $f$. We only have an idea about these unknowns via the data set $S$. Let us then use the data set to curate a quantity that approximates the generalization error:
 
