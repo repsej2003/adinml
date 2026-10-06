@@ -13,11 +13,9 @@ The difference of the current setting is that the output space is discrete. Let 
  * Its sign indicates the class label. If $z_i > 0$, then the hypothesis predicts that $x_i$ belongs to class $1$. If $z_i < 0$, then the hypothesis predicts that $x_i$ belongs to class $0$.
  * Its magnitude $|z_i|$ indicates the confidence of the hypothesis about the class assignment.
 
- When interpreted this way, $z_i$ is called the **discriminant function** (in Chapter 8 the same quantity reappears, under the same symbol, as the pre-activation of a neuron). While readily usable in its current shape, such a model is not easy to train. We desire a loss function that is differentiable with respect to the parameters $w$. The sign function is not differentiable. We can achieve differentiability by converting the discriminant function to a probability. Let $P_i := P(y_i{=}1 \mid x_i)$ denote the probability that $x_i$ belongs to class $1$, whose logarithm we take to be proportional to the discriminant function. That is:
+When interpreted this way, $z_i$ is called the **discriminant function** (in Chapter 8 the same quantity reappears, under the same symbol, as the pre-activation of a neuron). While readily usable in its current shape, such a model is not easy to train: the prediction depends on the *sign* of $z_i$, which is not differentiable with respect to the parameters $w$, so no gradient-based method can tune them. The repair is to re-express the hypothesis as a probability — a differentiable quantity — while keeping the score's sign-and-magnitude reading intact. Let $P_i := P(y_i{=}1 \mid x_i)$ denote the probability that $x_i$ belongs to class $1$.
 
-$$\log P_i \propto w^\top x_i.$$
-
-Considering also that the probability that $x_i$ is a member of class $0$ is $1-P_i$, we arrive at the following equation:
+The question is *which* function of $P_i$ the score should equal. Equating $z_i$ with $P_i$ itself cannot work: a probability lives in $(0,1)$, while the score ranges over all of $\mathbb{R}$. What the score's reading does suggest is a continuous quantity that measures how probable class $1$ is *relative to* class $0$. The natural candidate is the **odds** $\dfrac{P_i}{1-P_i}$: it equals $1$ when the two classes are equally likely, grows above $1$ as class $1$ becomes the more probable, and shrinks below $1$ as class $0$ does. Taken as the score's scale, however, the odds treat the two sides of $P_i=\frac12$ unevenly, without any reason to prefer one class over the other: for $P_i<\frac12$ they are squeezed into the bounded interval $(0,1)$, while for $P_i>\frac12$ they stretch over all of $(1,\infty)$, so mirrored probabilities yield *reciprocal* odds rather than *opposite* ones — $P_i=0.9$ gives odds $9$, whereas $P_i=0.1$ gives $\frac19$. The score, by contrast, is symmetric about zero: exchanging the roles of the two classes should merely negate it. The logarithm repairs exactly this asymmetry: the **log odds** $\log\dfrac{P_i}{1-P_i}$ is $0$ at $P_i=\frac12$, takes mirrored values at mirrored probabilities ($\log 9=-\log\frac19$), and ranges over all of $\mathbb{R}$ — a scale symmetric about zero, on a par with the score. Equating the score with the log odds yields:
 
 $$\log \dfrac{P_i}{1-P_i} = w^\top x_i.$$
 
@@ -35,27 +33,43 @@ $$
 \end{aligned}
 $$
 
-The result $g(u) =  \dfrac{1}{1 + e^{-u}}$ has the form of a function known as the **sigmoid function**. The expression $\log (P_i/(1-P_i))$ is sometimes called the **log odds** or the **logit function**. It is the inverse of the sigmoid function: $g^{-1}(P) = \log (P/(1-P))$ for some probability $P$. When $u := w^\top x_i$, the model is called **logistic regression** [Cox (1958)](https://www.jstor.org/stable/2983890)<!-- cite: cox1958logistic | article | author={Cox, D. R.}; title={The Regression Analysis of Binary Sequences}; journal={Journal of the Royal Statistical Society: Series B}; year={1958}; volume={20}; number={2}; pages={215--242} -->.
+The result $g(u) =  \dfrac{1}{1 + e^{-u}}$ has the form of a function known as the **sigmoid function**. The expression $\log (P_i/(1-P_i))$ is sometimes called the **log odds** or the **logit function**. It is the inverse of the sigmoid function: $g^{-1}(P) = \log (P/(1-P))$ for some probability $P$. When $u := w^\top x_i$, the model is called **logistic regression** [Cox (1958)](https://www.jstor.org/stable/2983890)<!-- cite: cox1958logistic | article | author={Cox, D. R.}; title={The Regression Analysis of Binary Sequences}; journal={Journal of the Royal Statistical Society: Series B}; year={1958}; volume={20}; number={2}; pages={215--242} -->. Note what the construction achieved: the sign of the score still carries the prediction — $g(u)\ge\frac12$ exactly when $u\ge0$, since $g$ is strictly increasing with $g(0)=\frac12$ — and the magnitude of the score still carries confidence, now as distance from the decision boundary $\frac12$ on the probability scale, and every bit of it is differentiable in $w$.
 
-We would like our hypothesis to maximize the true class probability of all data points in the data set. Since we assume our data points to be independent, we can maximize the probability of each data point separately. Hence, we can maximize the probability of the data set by maximizing the product of the probabilities of each data point
+We would like our hypothesis to maximize the true class probability of all data points in the data set. Since we assume our data points to be independent, the probability of the data set is the product of the probabilities of each data point, and maximizing it point by point maximizes it jointly:
 
 $$\prod_{i=1}^m P_i^{y_i} (1-P_i)^{1-y_i}.$$
 
-This is equivalent to maximizing the sum of the logarithms of the probabilities of each data point. Hence, we can define the **binary cross-entropy loss** as its negation
+Maximizing this product is mathematically equivalent to maximizing its logarithm, since $\log$ is strictly increasing. The logarithm is also what makes the objective usable, for two reasons. First, *numerical precision*: the product of many probabilities, each below $1$, shrinks towards zero exponentially fast in $m$ — a million data points of probability around $0.5$ multiply to about $10^{-301030}$, far below what any computer can represent — and once a product underflows, comparing candidate parameters becomes impossible. The logarithm converts the product into a *sum*, which grows linearly in $m$ instead of shrinking exponentially, and stays within representable range. Second, *optimization*: sums split over data points, so the objective and its gradient decompose into per-point contributions — a structure gradient descent (and the mini-batching of Chapter 8) relies on — and the exponent in each factor, $P_i^{y_i}(1-P_i)^{1-y_i}$, comes down from the power to a multiplier, where $P_i = g(w^\top x_i)$ and $g$ itself already involves an exponential. Hence, we can define the **binary cross-entropy loss** as the negated log-probability of the data set:
 
 $$\mathcal{L}_{CE}(w) = -\sum_{i=1}^m \log g(w^\top x_i)^{y_i} (1-g(w^\top x_i))^{1-y_i} = -\sum_{i=1}^m \Big[ y_i \log g(w^\top x_i) + (1-y_i) \log(1-g(w^\top x_i)) \Big].$$
 
 ## Extension to multi-class classification
 
-Let us quickly extend the above formulation to multi-class classification. Assume we have $C$ classes, that is, we aim to fit an $h$ to a data set $S=\{(x_i,y_i)|i \in [m]\}$ that consists of $(x,y)$ pairs with $y \in \{1,\ldots, C\}$. We will then need to model the class probabilities of $C$ different classes, $P_1, \ldots, P_C$, from $C$ per-class logits $u_c := w_c^\top x_i$:
+Let us quickly extend the above formulation to multi-class classification. Assume we have $C$ classes, that is, we aim to fit an $h$ to a data set $S=\{(x_i,y_i)|i \in [m]\}$ that consists of $(x,y)$ pairs with $y \in \{1,\ldots, C\}$. We will then need to model the class probabilities of $C$ different classes, $P_1, \ldots, P_C$, from $C$ per-class scores $u_c := w_c^\top x_i$. The binary construction generalizes directly: the log odds $\log\frac{P}{1-P}$ measures how probable a class is relative to *one specific other class*, so with $C$ classes we pick one of them — call it class $j\in[C]$ — as the **baseline**, and let each score $u_c$ measure class $c$ against that baseline:
 
-$$\log P_c \propto u_c = w_c^\top x_i.$$
+$$\log \dfrac{P_c}{P_j} = u_c = w_c^\top x_i, \qquad c \neq j .$$
 
-Solving for $P_c$ and assuring that the class probabilities sum up to one yields:
+Let us solve for the class probabilities step by step.
 
-$$\mathrm{softmax}(u)_c = \dfrac{e^{u_c}}{\sum_{c'=1}^C e^{u_{c'}}},$$
+*Step 1: exponentiate each equation.* For every class $c\neq j$,
 
-which is called the **softmax** function. The related loss function is then:
+$$\dfrac{P_c}{P_j} = e^{u_c} \quad\Longrightarrow\quad P_c = P_j\, e^{u_c}.$$
+
+The baseline's own equation is trivially $\log\frac{P_j}{P_j}=0$, so class $j$ has no score of its own — it is the reference against which the others are measured, and its "exponent" is $e^0=1$.
+
+*Step 2: determine $P_j$ from normalization.* The probabilities must sum to one. Substituting $P_c = P_je^{u_c}$ for every $c\neq j$:
+
+$$1 = \sum_{c=1}^{C} P_c = P_j + \sum_{c\neq j} P_j\,e^{u_c} = P_j\Big(1 + \sum_{c\neq j} e^{u_c}\Big) = P_j \sum_{c=1}^{C} e^{u_c},$$
+
+where the last equality uses $1=e^{u_j}$ with $u_j:=0$. Hence
+
+$$P_j = \dfrac{1}{\sum_{c'=1}^{C} e^{u_{c'}}}.$$
+
+*Step 3: back-substitute.* Combining $P_c = P_je^{u_c}$ with the expression for $P_j$ gives every class probability at once:
+
+$$P_c = \dfrac{e^{u_c}}{\sum_{c'=1}^{C} e^{u_{c'}}} =: \mathrm{softmax}(u)_c ,$$
+
+which is called the **softmax** function. Note that the choice of the baseline class has effectively disappeared from the result: picking a different class $j'$ as the baseline shifts every score by a constant ($u_c' = u_c - u_{j'}$, leaving the ratios $e^{u_c}/e^{u_{c'}}$ untouched), so the softmax depends only on the *differences* between the scores — with $C=2$ it reduces to the sigmoid of exactly that difference, $P_{\bar\jmath} = g(u_{\bar\jmath}-u_j)$ for the one non-baseline class $\bar\jmath$. For the very same reason we may drop the bookkeeping convention $u_j=0$ altogether and simply give **every** class its own score $u_c = w_c^\top x_i$, one weight vector per class: a common shift of all scores changes no probability, so the redundancy is harmless, and this is the convention used in the loss below. The related loss function is then:
 
 $$\mathcal{L}_{CE}(W) = -\sum_{i=1}^m \log \mathrm{softmax}(u_i)_{y_i} = \sum_{i=1}^m \Big \{ -w_{y_i}^\top x_i + \log \Big ( \sum_{c=1}^C e^{w_c^\top x_i} \Big )  \Big \},$$
 
@@ -310,24 +324,38 @@ g1 = th.linspace(X_knn[:, 1].min() - pad, X_knn[:, 1].max() + pad, 200)
 gg0, gg1 = th.meshgrid(g0, g1, indexing='xy')
 mesh = th.stack([gg0.reshape(-1), gg1.reshape(-1)], dim=1)
 
-for weights in ["uniform", "distance"]:
-    # weights=uniform: All points in each neighborhood are weighted equally
-    # weights=distance: weight points by the inverse of their distance
-    zz = knn_predict(mesh, X_knn, y_knn, k=1, weights=weights).reshape(gg0.shape)
-
+def plot_regions(zz, k, weights):
     fig, ax = plt.subplots()
-    ax.pcolormesh(gg0, gg1, zz, cmap=cmap_light, shading="auto")
+    # vmin/vmax are pinned to the class range: with auto-scaling, a class absent
+    # from the predictions (e.g. a setosa point that never wins a 3-vote) would
+    # shift the color mapping and paint the remaining classes in the wrong colors.
+    ax.pcolormesh(gg0, gg1, zz, cmap=cmap_light, shading="auto", vmin=0, vmax=2)
     for c in range(3):
         pts = X_knn[y_knn == c]
         ax.scatter(pts[:, 0], pts[:, 1], c=cmap_bold[c],
                    edgecolor="black", label=names[c])
     ax.set_xlabel("sepal length (cm)"); ax.set_ylabel("sepal width (cm)")
     ax.legend()
-    ax.set_title("3-Class classification (k = 1, weights = '%s')" % weights)
+    ax.set_title("kNN decision regions (k = %d, weights = '%s')" % (k, weights))
+
+# With k = 1 the two weighting schemes coincide -- a single neighbor takes
+# the whole vote whatever its weight -- and the decision regions are
+# exactly the Voronoi cells of the training points.
+plot_regions(knn_predict(mesh, X_knn, y_knn, k=1, weights="uniform").reshape(gg0.shape),
+             k=1, weights="uniform")
+
+# The weightings disagree only once several neighbors share the vote:
+# with uniform weights each of the k neighbors counts equally, with
+# distance weights a close neighbor can outvote several farther ones.
+for weights in ["uniform", "distance"]:
+    plot_regions(knn_predict(mesh, X_knn, y_knn, k=3, weights=weights).reshape(gg0.shape),
+                 k=3, weights=weights)
 
 plt.show()
 ```
 
-![1-nearest-neighbor decision regions on the Iris data with uniform neighbor weighting.](fig/generated/03_Classification_4.png)
+![1-nearest-neighbor decision regions on the Iris data: the decision regions are the Voronoi cells of the training points.](fig/generated/03_Classification_4.png)
 
-![1-nearest-neighbor decision regions on the Iris data with distance-based neighbor weighting.](fig/generated/03_Classification_5.png)
+![3-nearest-neighbor decision regions with uniform neighbor weighting.](fig/generated/03_Classification_5.png)
+
+![3-nearest-neighbor decision regions with distance-based neighbor weighting, to be compared against the uniform-weighting figure above.](fig/generated/03_Classification_6.png)
