@@ -1,5 +1,6 @@
 This table collects the symbols used throughout the book for quick reference. Chapter 1 states the underlying conventions (parentheses vs. brackets, uppercase vs. lowercase, etc.) in prose; this page is only a lookup table.
 
+ooooo
 **Sets and spaces**
 
 | Symbol | Meaning |
