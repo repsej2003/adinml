@@ -1,4 +1,4 @@
-Assume we observe data that look as below.
+	Assume we observe data that look as below.
 
 ```python
 import matplotlib.pyplot as plt
@@ -171,6 +171,8 @@ plt.show()
 
 ![Unit-ball contours of the $\ell_p$ norm for $p \in \{0.5,1,2,3,7,\infty\}$, shrinking towards the axes as $p$ decreases.](fig/generated/02_Linear_Predictors_3.png)
 
+> Smaller power p, er hård er mod står løsninger
+> strengen er der hvor norm krydser 1 
 # Regularized least squares
 
 We have seen in Chapter 1 that $\widehat{R}_S(h_S)=0$ can be achieved by memorizing the training set, resulting in overfitting. Let us then write the hypothesis space as a nested chain of subclasses of growing capacity, $\mathcal{H}_1 \subset \mathcal{H}_2 \subset \cdots$ with $\mathcal{H} = \bigcup_{i} \mathcal{H}_i$, and devise an objective that pursues the dual goals of fitting the data as well as possible and constraining model complexity concurrently:
