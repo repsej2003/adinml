@@ -184,10 +184,38 @@ Let us make a matrix of these possible outcomes as a latex table:
 The version of this table where its entries are filled with the number of data points that fall into each category is called a **confusion matrix**. We can compute many performance metrics from the confusion matrix: 
 
   1. **Accuracy**: (TP + TN) / (TP + FP + TN + FN), the ratio of the number of correctly classified objects to the total number of objects.
+> [!notes]
+> fail down of accuracy
+>  
+
+|          | Predecit F | Predict T |
+| -------- | ---------- | --------- |
+| Actual T | 994        | 0         |
+| Actual F | 6          | 0         |
+Accursy of this is  $0,994$
+
+
   2. **Precision**: TP / (TP + FP), the ratio of the number of correctly classified objects to the number of objects classified as the object type.
+
+TP + NP -> pedicted postive
+Precistion -> slå jeg er alrm for ofte
+
   3. **Recall** (a.k.a. **True Positive Rate**, **Sensitivity**): TP / (TP + FN), the ratio of the number of correctly classified objects to the number of objects that are actually of the object type.
+
+TP + FN -> actual postives
+Recall -> Rammer jeg alle alarmer
+
   4. **F1 score**: 2 $\times$ Precision $\times$ Recall / (Precision + Recall), the harmonic mean of the precision and the recall.
+
+Det her er genmnist. 
+
+Eksempel med gennemsit hastighed af over to d
+
+F1 Skal bruges som metric, hvis data er ubalaceneret
+
+
   5. **False Positive Rate**: FP / (FP + TN), the ratio of the number of objects that are not of the object type but classified as the object type to the total number of objects that are not of the object type.
+
 
   The rationale behind the F1 score is that precision and recall are rates. Harmonic mean is a more sensible score to take the average of multiple rates. Consider a car that travels a distance $d$ with speed $x$ and returns with speed $y$. The average speed of the whole travel is
 
