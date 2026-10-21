@@ -308,6 +308,9 @@ plt.show()
 
 As is noticeable in the above example, the observed performance may depend greatly on the particular train-test split. To mitigate this problem, we can use **K-fold cross validation**. The idea is to split the data set into $K$ folds. Then, we train the model on $K-1$ folds and test it on the remaining fold. We repeat this process $K$ times, each time using a different fold as the test set. The final performance metric is the average of the performance metrics obtained in each iteration.
 
+
+der er bliver lavet k forskellige modeller 
+
 # K-Nearest Neighbors (kNN) Classifier
 
 The **k-nearest neighbors** [Fix and Hodges (1951)](https://doi.org/10.2307/1403797)<!-- cite: fix1951nearest | techreport | author={Fix, Evelyn and Hodges, Joseph L.}; title={Discriminatory Analysis, Nonparametric Discrimination: Consistency Properties}; institution={USAF School of Aviation Medicine, Randolph Field, Texas}; year={1951} --> classifier assigns a query point to the class of the majority of its $k$ nearest neighbors. It is a **non-parametric classifier**, that is, it does not represent the model with a fixed number of parameters. Instead, it memorizes the whole training data and uses it to make predictions. The number of neighbors $k$ is a hyperparameter of the model. While it is a strong classifier, its prediction-time complexity is unacceptable: $O(m)$, where $m$ is the number of training data points.
