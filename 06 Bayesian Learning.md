@@ -1,10 +1,5 @@
 # Maximum Likelihood Estimation
 
-|     |     |
-| --- | --- |
-|     |     |
-
-
 Machine learning is the tool of choice especially in real-world problems where there are factors of uncertainty and randomness. Having learned the principled way of accounting for uncertainty via probability theory, next we will see how we can use this theory to build machine learning models. Every machine learning problem has two key components: the data and the model. Let our data set be $S=\{x_1, x_2, \ldots, x_m\}$, where $x_i$ are the observed data points. At the stage of modeling, we draw a hypothesis about how these data could have been generated. Let our hypothesis be that the data are generated as independent samples from a distribution following a parametric probability function $P(x \mid \theta)$, where $\theta$ is the parameter of the distribution. Then the joint probability of the random variables representing the occurrence of the data set is given by
 
 $$P(S \mid \theta) = P(x_1, x_2, \ldots, x_m \mid \theta) = \prod_{i=1}^m P(x_i \mid \theta).$$

@@ -357,7 +357,6 @@ In words, if $\mathcal{H}$ is large enough to shatter a data set of $2m$ on a do
 
 $$\tau_{\mathcal{H}}(m) = \max_{S \subseteq \mathcal{X},\, |S| = m} |\mathcal{H}_S|.$$
 
->Tæller antal labelings af inputs, ikke antal hyptoser. Så for en given hyptose rum, hvor mange måder kan det antal elemeter klassiferes. For eksempel kan en linear funktion ikke label 4 elemeter på alle måder
 ---
 
 In words, the growth function counts the maximum number of distinct labelings that $\mathcal{H}$ can report on any data set on domain $\mathcal{X}$ that contains $m$ data points. 

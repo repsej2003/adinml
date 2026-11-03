@@ -3,15 +3,15 @@ This table collects the symbols used throughout the book for quick reference. Ch
 ooooo
 **Sets and spaces**
 
-| Symbol                       | Meaning                                               |     |
-| ---------------------------- | ----------------------------------------------------- | --- |
-| $\mathcal{X}$                | Feature (input) space                                 |     |
-| $\mathcal{Y}$                | Label (output) space                                  |     |
-| $\mathcal{H}$                | Hypothesis class                                      |     |
-| $\mathcal{D}$                | Data distribution over $\mathcal{X}\times\mathcal{Y}$ |     |
-| $\mathcal{D}_{\mathcal{X}}$  | Marginal of $\mathcal{D}$ on $\mathcal{X}$            |     |
-| $[m]$                        | $\{1,\ldots,m\}$                                      |     |
-| $\mathrm{dist}(\cdot,\cdot)$ | Distance function of a metric space (Chapter 2)       |     |
+| Symbol | Meaning |
+|---|---|
+| $\mathcal{X}$ | Feature (input) space |
+| $\mathcal{Y}$ | Label (output) space |
+| $\mathcal{H}$ | Hypothesis class |
+| $\mathcal{D}$ | Data distribution over $\mathcal{X}\times\mathcal{Y}$ |
+| $\mathcal{D}_{\mathcal{X}}$ | Marginal of $\mathcal{D}$ on $\mathcal{X}$ |
+| $[m]$ | $\{1,\ldots,m\}$ |
+| $\mathrm{dist}(\cdot,\cdot)$ | Distance function of a metric space (Chapter 2) |
 
 **Data and samples**
 
