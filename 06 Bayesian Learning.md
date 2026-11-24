@@ -30,7 +30,7 @@ $$
 
 Unsurprisingly, the MLE of a Bernoulli parameter is simply the observed frequency of heads, i.e. the sample mean of $S$. This is the estimator we implicitly used throughout Chapter 5 whenever we wrote $\widehat\mu_m$ for a sample of Bernoulli random variables.
 
-# Bayesian Learning
+# Bayesian Inference
 
 The MLE approach commits to a single value of $\theta$ and does not represent how uncertain we are about it — an uncertainty that is naturally large when $m$ is small (imagine estimating $\theta$ from three coin tosses) and shrinks as $m$ grows. This ansatz, where $\theta$ is treated as an unknown but fixed constant, is called **frequentist learning**. **Bayesian learning** instead treats $\theta$ itself as a random variable, with a distribution that captures our belief about its likely values before and after seeing data.
 
@@ -222,7 +222,7 @@ where $\eta=(\pi,\theta)$ ranges over $\pi_c>0$, $\sum_{c=1}^C\pi_c=1$, and $\th
 
 ---
 
-The following proposition shows that the reparameterization is not merely a convenient rewriting: it exhausts the affine class.
+The following proposition shows that the reparameterization exhausts the affine class.
 
 **Proposition 8.6.2 (The Naive Bayes and affine classes coincide).** $\mathcal{H}_{\mathrm{NB}}=\mathcal{H}_{\mathrm{aff}}$.
 
@@ -340,7 +340,15 @@ $$
 \end{aligned}
 $$
 
-*Step 3: Massart's lemma.* Condition on $S$. For each $h$, let $a^h:=(\ell(y_1,h(x_1)),\ldots,\ell(y_m,h(x_m)))\in[0,1]^m$. As $h$ ranges over $\mathcal{H}$, the vectors $a^h$ take at most $\tau_{\mathcal{H}}(m)$ distinct values, and each has Euclidean norm at most $\sqrt m$. Since the supremum in Step 2 is inside an absolute value, apply Massart's lemma (Lemma 7.3.3) to the symmetrized set $A:=\{a^h:h\in\mathcal{H}\}\cup\{-a^h:h\in\mathcal{H}\}$, which has at most $2\tau_{\mathcal{H}}(m)$ elements:
+*Step 3: Massart's lemma.* Condition on $S$. For each $h$, let
+
+$$a^h:=\big(\ell(y_1,h(x_1)),\ldots,\ell(y_m,h(x_m))\big)\in[0,1]^m$$
+
+be the vector of its losses on $S$. As $h$ ranges over $\mathcal{H}$, the vectors $a^h$ take at most $\tau_{\mathcal{H}}(m)$ distinct values, and each has Euclidean norm at most $\sqrt m$. Since the supremum in Step 2 is inside an absolute value, apply Massart's lemma (Lemma 7.3.3) to the symmetrized set
+
+$$A:=\{a^h:h\in\mathcal{H}\}\cup\{-a^h:h\in\mathcal{H}\},$$
+
+which has at most $2\tau_{\mathcal{H}}(m)$ elements:
 
 $$\mathbb{E}_\sigma\Big[\sup_{h\in\mathcal{H}}\Big|\frac1m\sum_{i=1}^m\sigma_i a_i^h\Big|\Big]=\mathbb{E}_\sigma\Big[\max_{a\in A}\frac1m\sum_{i=1}^m\sigma_i a_i\Big]\le\sqrt{\frac{2\log\big(2\tau_{\mathcal{H}}(m)\big)}{m}}.$$
 

@@ -74,7 +74,7 @@
 \colorlet{lemscol}{mondrianblue} %For Lemmes (from amd.sty's Mondrian palette)
 \colorlet{thmscol}{mondrianblue} %For Theorems (from amd.sty's Mondrian palette)
 \colorlet{prpscol}{mondrianblue} %For proposition (from amd.sty's Mondrian palette)
-\colorlet{corscol}{gray} %For corrolaries
+\definecolor{corscol}{HTML}{8E44AD} %For corollaries (violet; plain gray clashed with the gray proof boxes)
 
 \definecolor{clmscol}{HTML}{165c58} %For claims
 \definecolor{facscol}{HTML}{28a8a1} %For facts
@@ -391,6 +391,25 @@
 % ============================
 % Proof
 % ============================
+
+% Light-gray box around every proof (book_convert.py wraps each proof
+% environment in it), so proofs stand apart from the main text. The box
+% grows into the margins by its inner padding, so the proof text keeps
+% the full text width and long equations do not overflow more easily.
+\definecolor{proofscol}{HTML}{f0f0f0}
+\newtcolorbox{proofbox}{
+    enhanced,
+    breakable,
+    frame hidden,
+    boxrule=0pt,
+    arc=1mm,
+    colback=proofscol,
+    left=2.5mm, right=2.5mm, top=1.5mm, bottom=1.5mm,
+    grow to left by=2.5mm, grow to right by=2.5mm,
+    before skip=8pt, after skip=10pt,
+    parbox=false,
+    before upper={\parindent0.5cm},
+}
 
 \NewDocumentCommand{\pf}{+m}{
     \begin{proof}

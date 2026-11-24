@@ -23,7 +23,7 @@ The first-generation activation function was the Heaviside step function:
 
 $$g(z) = \begin{cases} 1 & \text{if } z \geq 0, \\ 0 & \text{otherwise.} \end{cases}$$
 
-This construction, called a **perceptron**, is not popular nowadays since it is not differentiable. Modern neural networks use differentiable activation functions such as:
+This construction, called a **perceptron**, is not popular nowadays because the step function gives gradient-based training nothing to follow. The reason lies in the flat regions of the step function, as we show after the figure below. Modern neural networks use activation functions with a usable derivative over most of their domain, such as:
 
 - Sigmoid function: $g(z) = \frac{1}{1+e^{-z}}$,
 - Hyperbolic tangent function: $g(z) = \tanh(z)$,
@@ -87,6 +87,30 @@ plt.show()
 ```
 
 ![The ReLU, sigmoid, and tanh activation functions (top row) and their gradients (bottom row).](fig/generated/08_Neural_Networks_1.png)
+
+## Why the Kink at Zero Is Benign for ReLU but Not for the Step
+
+The Heaviside step and ReLU are both nondifferentiable at $z=0$, so it is tempting to conclude that they fail for the same reason. They do not. The step is **discontinuous** at zero: its left limit is $0$, while its right limit and its value are $1$. Away from zero its derivative is identically zero, and at zero the function jumps, so no finite derivative can describe the change. More importantly, a network built from step units is a piecewise-constant function of its weights: an infinitesimal change in a weight almost never moves a pre-activation across zero, so the loss does not change and its derivative is zero wherever it exists. Gradient descent therefore receives no direction to follow. The historical perceptron did not use gradient descent for this reason; it used a separate mistake-driven update that moved the decision boundary only when an example was misclassified.
+
+ReLU is continuous everywhere, including at $z=0$: its left and right limits there both equal $0$. It is piecewise linear, with derivative $1$ for $z>0$ and $0$ for $z<0$. At the single point $z=0$ the left and right derivatives differ, so the classical derivative does not exist; any value in $[0,1]$ is a valid **subgradient**, a generalization of the derivative for convex functions. This undefined set is a single point, so it has measure zero (no length): for generic inputs and weights no pre-activation is exactly zero, and even when one is, the function has slope $1$ immediately to the right, so the kink does not create a flat region around zero; the choice of subgradient affects only that isolated point. ReLU is differentiable everywhere else, so the loss is differentiable **almost everywhere** (everywhere outside a set of measure zero). Backpropagation may therefore use the almost-everywhere derivative; the resulting **stochastic subgradient method** is the natural extension of stochastic gradient descent to piecewise-differentiable losses, and its step sizes obey the same conditions. The figure makes the convention concrete: PyTorch, which produced the gradients in its bottom row, returns $0$ at the kink.
+
+The distinction is therefore not differentiability at a single point. The step fails because it is discontinuous and its derivative vanishes on both sides of the jump, leaving no local linear approximation to follow. ReLU's kink is benign because it is isolated and because one side has a nonzero slope.
+
+## How the Gradient Structure Shapes Learning
+
+The activation derivative is not a local detail: it multiplies the error at every layer. As the backpropagation section below makes precise, each layer applies $g'$, so a path through $L$ layers carries the product of $L$ such factors. This product determines whether the error reaches the early layers at all.
+
+- **Saturating activations shrink the signal.** For the sigmoid, $g'(z)=\sigma(z)\big(1-\sigma(z)\big)\leq 1/4$; for $\tanh$, $g'(z)=1-\tanh^2(z)\leq 1$. A deep stack of such factors tends to shrink the gradient exponentially with depth --- the **vanishing gradient** problem --- so the output layer learns while the early layers barely move. This is why purely sigmoid or tanh networks were difficult to train beyond a few layers.
+- **ReLU preserves the signal on active paths.** Its derivative is exactly $1$ wherever $z>0$, so the activation factor does not attenuate the error, however deep the network; the weights can still amplify or shrink it. This is the main reason deep networks became practical with backpropagation.
+- **ReLU silences inactive paths.** Where $z<0$ the derivative is $0$, so the unit receives no update from that example. A unit that is negative on every example is a **dead ReLU**: its weights stop changing and it never fires again. Variants such as **leaky ReLU**, $g(z)=\max(\gamma z,z)$ with a small fixed $\gamma>0$, keep a nonzero slope on the negative side so that a dead unit can recover.
+
+The gradient structure also changes the *character* of learning. A ReLU network is piecewise linear: for a fixed pattern of active and inactive units, the network is an affine function of the input, i.e. a linear function plus a constant. Within one such pattern the gradient with respect to the weights is constant, and gradient descent adjusts the slopes and offsets of that affine piece; across patterns the gradient is piecewise constant. When a pre-activation crosses zero, the pattern changes and the network switches to a different piece. Learning therefore has two coupled aspects: fitting within the current linear pieces and changing the pieces themselves. A step-function network has only the second aspect and none of the gradient information needed to steer it, which is why it required the perceptron rule rather than backpropagation.
+
+## Activation Functions in Frontier AI Pipelines
+
+The functions above are the pedagogical baseline; current frontier pipelines use a small number of smooth variants. The de facto standard in large language models is **SwiGLU** (Swish-gated linear unit) [Shazeer (2020)](https://arxiv.org/abs/2002.05202)<!-- cite: shazeer2020glu | article | author={Shazeer, Noam}; title={GLU Variants Improve Transformer}; journal={arXiv preprint arXiv:2002.05202}; year={2020} -->, a **gated** unit rather than a function applied to each number independently: it computes two linear projections $a=W_1x$ and $b=W_2x$ of the input and returns
+$$a\odot\mathrm{SiLU}(b), \qquad \mathrm{SiLU}(z)=z\,\sigma(z),$$
+where $\mathrm{SiLU}$ is the **Sigmoid Linear Unit** [Elfwing et al. (2018)](https://doi.org/10.1016/j.neunet.2017.12.012)<!-- cite: elfwing2018silu | article | author={Elfwing, Stefan and Uchibe, Eiji and Doya, Kenji}; title={Sigmoid-Weighted Linear Units for Neural Network Function Approximation in Reinforcement Learning}; journal={Neural Networks}; year={2018}; volume={107}; pages={3--11}; doi={10.1016/j.neunet.2017.12.012} -->, also known as Swish [Ramachandran et al. (2017)](https://arxiv.org/abs/1710.05941)<!-- cite: ramachandran2017swish | article | author={Ramachandran, Prajit and Zoph, Barret and Le, Quoc V.}; title={Searching for Activation Functions}; journal={arXiv preprint arXiv:1710.05941}; year={2017} -->, $\odot$ is the elementwise product, and $\sigma$ is the sigmoid. The gate $\mathrm{SiLU}(b)$ modulates each feature of $a$ multiplicatively, learning which features to amplify, suppress, or flip in sign. SwiGLU is used in PaLM, Llama, Mistral, DeepSeek, and Qwen, among others [Touvron et al. (2023)](https://arxiv.org/abs/2302.13971)<!-- cite: touvron2023llama | article | author={Touvron, Hugo and Lavril, Thibaut and Izacard, Gautier}; title={LLaMA: Open and Efficient Foundation Language Models}; journal={arXiv preprint arXiv:2302.13971}; year={2023} -->, and has largely displaced ReLU and GELU in that setting. The second common choice is **GeGLU** (GELU-gated linear unit), the same construction with the GELU (Gaussian error linear unit, a smooth approximation of ReLU) in place of SiLU, used in Gemma [Gemma Team (2024)](https://arxiv.org/abs/2403.08295)<!-- cite: gemma2024 | article | author={Gemma Team}; title={Gemma: Open Models Based on Gemini Research and Technology}; journal={arXiv preprint arXiv:2403.08295}; year={2024} -->. Gated units cost an extra weight matrix, but at matched parameter count they tend to improve language-model quality; this empirical gain, rather than a theoretical guarantee, is why they dominate current practice.
 
 # Neural Network (Multilayer Perceptron)
 
@@ -273,9 +297,10 @@ using $\sum_c y_c = 1$. So $\delta_j^H = \widehat y_j - y_j$ holds for the squar
 
 # Implementation: A Multilayer Perceptron From Scratch
 
-We now implement (F1)-(F2) and (B1)-(B4) literally, with no automatic differentiation anywhere: each layer is an object exposing a `forward` map and the corresponding explicitly coded `backward` map, and the optimizer is the four-line stochastic gradient step of the previous section. Two points are worth watching for in the code below.
+We now implement (F1)-(F2) and (B1)-(B4) literally, with no automatic differentiation anywhere: each layer is an object exposing a `forward` map and the corresponding explicitly coded `backward` map, and the optimizer is the four-line stochastic gradient step of the previous section. Three points are worth watching for in the code below.
 
 * **Every `backward` is one of the identities above**, in the same order: `Affine.backward` implements (B3), (B4) and the factor $\mathbf{\Delta}^l W_l^\top$ of (B2); `ReLU.backward` supplies the remaining $\odot\, g'(\mathbf{Z})$ factor; `SoftmaxCrossEntropy.backward` is (B1).
+* **The passes are coupled.** Each layer caches what its `backward` needs: `Affine` stores its input as `self.H` (used by (B3)); `ReLU` stores the sign mask `self.mask`, which is exactly $g'(\mathbf{Z})$ for ReLU (only the sign of the pre-activation is needed); and the loss layer stores its predictions and targets (used by (B1)). The corresponding `backward` methods read these attributes, so calling `backward` before any forward pass fails on missing attributes, while calling it after a different mini-batch silently reuses stale ones. The training loop therefore always runs the forward pass before the backward pass for each mini-batch.
 * **The gradients are verified against finite differences.** Since we claim to have differentiated the network by hand, we check that claim numerically: for a random weight $w$, the central difference $\big(\widehat{R}(w{+}\epsilon)-\widehat{R}(w{-}\epsilon)\big)/(2\epsilon)$ must agree with the analytic gradient to within the $O(\epsilon^2)$ truncation error. This **gradient check** is the standard way to debug a hand-written backward pass, and is worth internalizing as a technique in its own right.
 
 The data set is `digits`: $1797$ real handwritten digits scanned as $8\times8$ grayscale images ($d=64$ features, $C=10$ classes) — the same task as the MNIST example below, at a scale that trains from scratch in seconds.
@@ -507,9 +532,18 @@ and write $\mathcal{H}^{(1)}_{k,B_1,B_2}$ for the resulting class. Then for ever
 $$\widehat{\mathfrak{R}}_S\big(\mathcal{H}^{(1)}_{k,B_1,B_2}\big) \;\leq\; \frac{2B_1 B_2 R}{\sqrt{m}}.$$
 
 **Proof.** Fix the signs $\sigma$ and abbreviate $c(u) := \frac1m\sum_{i=1}^m \sigma_i\, g(u^\top x_i)$ for the correlation of a single hidden unit $u$. A hypothesis restricted to $S$ is the vector $\big(\sum_j w_j g(w_j^{(1)\top}x_i)\big)_{i=1}^m$, so
-$$\sup_{W,w} \frac1m \sum_{i=1}^m \sigma_i h_{W,w}(x_i) \;=\; \sup_{W,w} \sum_{j=1}^k w_j\, c\big(w_j^{(1)}\big) \;\leq\; \sup_{W,w} \sum_{j=1}^k |w_j|\, \big|c\big(w_j^{(1)}\big)\big| \;\leq\; \Big(\sum_{j=1}^k |w_j|\Big)\, \sup_{\|u\|_2 \leq B_1} |c(u)| \;\leq\; B_2 \sup_{\|u\|_2 \leq B_1} |c(u)|,$$
+$$
+\begin{aligned}
+\sup_{W,w} \frac1m \sum_{i=1}^m \sigma_i h_{W,w}(x_i) &= \sup_{W,w} \sum_{j=1}^k w_j\, c\big(w_j^{(1)}\big) \\
+&\leq \sup_{W,w} \sum_{j=1}^k |w_j|\, \big|c\big(w_j^{(1)}\big)\big| \\
+&\leq \Big(\sum_{j=1}^k |w_j|\Big)\, \sup_{\|u\|_2 \leq B_1} |c(u)| \\
+&\leq B_2 \sup_{\|u\|_2 \leq B_1} |c(u)|,
+\end{aligned}
+$$
 where the second inequality pulls the total $L_1$ mass out of the sum, and the third applies the constraint. The point is that the sup over $W$ of the individual correlations $\lvert c(w_j^{(1)})\rvert$ collapses to a single scalar supremum, exactly as in Theorem 10.5.1's proof — the row index $j$ labels identical constraint sets, so maximizing the weighted sum with an $L_1$ budget puts all mass on the single best hidden unit (a vertex of the $L_1$ ball). Taking $\mathbb{E}_\sigma$ and applying the same chain as in Theorem 10.5.1's proof (signed contraction (7.1) for the $1$-Lipschitz $g$ with $g(0)=0$, Cauchy-Schwarz, Jensen) gives
-$$\widehat{\mathfrak{R}}_S\big(\mathcal{H}^{(1)}_{k,B_1,B_2}\big) \;\leq\; B_2\, \mathbb{E}_\sigma\Big[\sup_{\|u\|_2 \leq B_1} \big|c(u)\big|\Big] \;\leq\; B_2\cdot\frac{2B_1 R\sqrt{m}}{m} \;=\; \frac{2B_1 B_2 R}{\sqrt{m}}. \qquad\square$$
+$$\widehat{\mathfrak{R}}_S\big(\mathcal{H}^{(1)}_{k,B_1,B_2}\big) \;\leq\; B_2\, \mathbb{E}_\sigma\Big[\sup_{\|u\|_2 \leq B_1} \big|c(u)\big|\Big] \;\leq\; B_2\cdot\frac{2B_1 R\sqrt{m}}{m} \;=\; \frac{2B_1 B_2 R}{\sqrt{m}}.$$
+
+$\square$
 
 Bounds of this type, in which the size of the weights rather than the size of the network controls capacity, go back to [Bartlett (1998)](https://doi.org/10.1109/18.661502)<!-- cite: bartlett1998sample | article | author={Bartlett, Peter L.}; title={The Sample Complexity of Pattern Classification with Neural Networks: The Size of the Weights Is More Important than the Size of the Network}; journal={IEEE Transactions on Information Theory}; year={1998}; volume={44}; number={2}; pages={525--536} -->. The right-hand side has no dependence on the width $k$. The comparison between Theorems 10.5.1 and 10.5.2 is the cleanest illustration of **Theorem 7.7.2's moral in action**. The $\sqrt k$ in Theorem 10.5.1 is precisely the factor incurred by the $L_2$ constraint when it is measured in $L_1$ terms: by norm equivalence $\|w\|_1 \leq \sqrt{k}\,\|w\|_2$, an $L_2$-constrained network has total output weight at most $\sqrt k\,B_2$, and Theorem 10.5.2 bounds exactly that total — so Theorem 10.5.1 is recovered by norm conversion. Conversely, the $L_1$ form shows that the width is a *bookkeeping device*: the class of $L_1$-constrained combinations is no richer, in Rademacher terms, than the class of its single hidden units (scaled by the budget $B_2$), no matter how large $k$ is. The same accounting by total weight underlies the gradient-boosting guarantee of Chapter 12: the capacity of an ensemble is controlled by its total weight, not by its member count. Both theorems still constrain each hidden unit separately; the refinement of Golowich, Rakhlin & Shamir (2018) extends the accounting to norms of the hidden weight matrices, and to deeper networks.
 
@@ -524,13 +558,23 @@ Bounds of this type, in which the size of the weights rather than the size of th
 *(iii)* if $f$ is also convex and $0 < \alpha \leq 2/\beta$, the gradient step $G(u) := u - \alpha\nabla f(u)$ satisfies $\|G(u) - G(v)\|_2 \leq \|u - v\|_2$.
 
 **Proof.** *(i)* By the fundamental theorem of calculus along the segment from $u$ to $v$, Cauchy-Schwarz and smoothness,
-$$f(v) - f(u) - \nabla f(u)^\top(v-u) = \int_0^1\big(\nabla f(u + t(v-u)) - \nabla f(u)\big)^\top(v-u)\,dt \;\leq\; \int_0^1 \beta t\,\|v-u\|_2^2\,dt = \frac\beta2\|v-u\|_2^2.$$
+$$
+\begin{aligned}
+f(v) - f(u) - \nabla f(u)^\top(v-u) &= \int_0^1\big(\nabla f(u + t(v-u)) - \nabla f(u)\big)^\top(v-u)\,dt \\
+&\leq \int_0^1 \beta t\,\|v-u\|_2^2\,dt = \frac\beta2\|v-u\|_2^2.
+\end{aligned}
+$$
 *(ii)* Fix $u$ and let $\psi(y) := f(y) - \nabla f(u)^\top y$. It is convex and $\beta$-smooth with $\nabla\psi(u) = 0$, so $u$ minimizes $\psi$. Applying (i) to $\psi$ at the point $y - \frac1\beta\nabla\psi(y)$,
 $$\psi(u) \;\leq\; \psi\big(y - \tfrac1\beta\nabla\psi(y)\big) \;\leq\; \psi(y) - \tfrac1\beta\|\nabla\psi(y)\|_2^2 + \tfrac{1}{2\beta}\|\nabla\psi(y)\|_2^2 = \psi(y) - \tfrac{1}{2\beta}\|\nabla f(y) - \nabla f(u)\|_2^2.$$
 Written out, $f(u) \leq f(y) + \nabla f(u)^\top(u - y) - \frac1{2\beta}\|\nabla f(y) - \nabla f(u)\|_2^2$. Adding this inequality to the same one with $u$ and $y$ exchanged, and setting $y = v$, gives (ii).
 
 *(iii)* Expanding the square and using (ii),
-$$\|G(u)-G(v)\|_2^2 = \|u-v\|_2^2 - 2\alpha\big(\nabla f(u)-\nabla f(v)\big)^\top(u-v) + \alpha^2\|\nabla f(u)-\nabla f(v)\|_2^2 \;\leq\; \|u-v\|_2^2 - \alpha\Big(\frac2\beta - \alpha\Big)\|\nabla f(u)-\nabla f(v)\|_2^2,$$
+$$
+\begin{aligned}
+\|G(u)-G(v)\|_2^2 &= \|u-v\|_2^2 - 2\alpha\big(\nabla f(u)-\nabla f(v)\big)^\top(u-v) + \alpha^2\|\nabla f(u)-\nabla f(v)\|_2^2 \\
+&\leq \|u-v\|_2^2 - \alpha\Big(\frac2\beta - \alpha\Big)\|\nabla f(u)-\nabla f(v)\|_2^2,
+\end{aligned}
+$$
 and the last term is non-positive for $\alpha \leq 2/\beta$ $\square$
 
 All three facts are standard in convex optimization; see Chapter 2 of [Nesterov (2004)](https://doi.org/10.1007/978-1-4419-8853-9)<!-- cite: nesterov2004introductory | book | author={Nesterov, Yurii}; title={Introductory Lectures on Convex Optimization: A Basic Course}; publisher={Springer}; year={2004} -->.

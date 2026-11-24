@@ -30,7 +30,12 @@ $$\begin{gathered}
 \end{gathered}$$
 
 ***Proof.*** The first claim is linearity of expectation. For the second, independence makes all cross-covariances vanish, so
-$$\mathrm{Var}\Big[\tfrac1T\sum_t h_{S_t}(x)\Big] = \tfrac{1}{T^2}\sum_{t=1}^T \mathrm{Var}[h_{S_t}(x)] + \tfrac{1}{T^2}\sum_{t \neq t'} \underbrace{\mathrm{Cov}[h_{S_t}(x), h_{S_{t'}}(x)]}_{=\,0} = \tfrac{1}{T^2}\cdot T\,\mathrm{Var}_S[h_S(x)]. \qquad\square$$
+$$
+\begin{aligned}
+\mathrm{Var}\Big[\tfrac1T\sum_t h_{S_t}(x)\Big] &= \tfrac{1}{T^2}\sum_{t=1}^T \mathrm{Var}[h_{S_t}(x)] + \tfrac{1}{T^2}\sum_{t \neq t'} \underbrace{\mathrm{Cov}[h_{S_t}(x), h_{S_{t'}}(x)]}_{=\,0} \\
+&= \tfrac{1}{T^2}\cdot T\,\mathrm{Var}_S[h_S(x)]. \qquad\square
+\end{aligned}
+$$
 
 In the vocabulary of Chapter 6's bias-variance decomposition: the $\text{Bias}^2$ term is untouched and the $\text{Variance}$ term is divided by $T$. Letting $T\to\infty$, the weak law of large numbers (Theorem 5.6.3) gives $h_{S_1,\ldots,S_T}(x) \to \bar h(x) := \mathbb{E}_S[h_S(x)]$, the **average predictor** of Chapter 6.
 
@@ -190,7 +195,7 @@ $$\widehat{\mathfrak{R}}_S\big(\phi_\nu \circ \mathrm{conv}(\mathcal{H}_0)\big) 
 | fit term | $\widehat{R}_S(h_S)$, hits $0$ and then stops moving | $\frac1m\sum_i\mathds{1}(y_i\bar f_T(x_i)\leq\nu)$, **keeps shrinking** |
 | complexity term | $O(\sqrt{d_0T\log(d_0T)/m})$, **grows with $T$** | $\frac{2}{\nu}\widehat{\mathfrak{R}}_S(\mathcal{H}_0)$, **independent of $T$** |
 
-Account 2 says that additional boosting rounds incur no additional complexity — a convex combination of $T$ members is no richer, in the Rademacher sense, than a single member — while they continue to improve a quantity that the zero-one training error is too coarse to reveal: Theorem 12.2.3's proof shows AdaBoost keeps driving the exponential loss $Z_t$ down after $\widehat{R}_S = 0$, and $Z_t$ is small only when the margins $y_i f_t(x_i)$ are *large*, not merely positive. Boosting past zero training error is therefore not idle: it is converting correct-but-marginal predictions into correct-and-confident ones, which is precisely what the first term of Theorem 12.2.7 rewards. This is the same lesson as Chapter 10's: the complexity measure that grows with the number of parameters is the wrong choice, and a scale-sensitive measure — margins here, weight norms there — is the right one.
+Account 2 says that additional boosting rounds incur no additional complexity — a convex combination of $T$ members is no richer, in the Rademacher sense, than a single member — while they continue to improve a quantity that the zero-one training error is too coarse to reveal: Theorem 12.2.3's proof shows AdaBoost keeps driving the exponential loss $Z_t$ down after $\widehat{R}_S = 0$, and $Z_t$ is small only when the margins $y_i f_t(x_i)$ are *large*. Boosting past zero training error is therefore not idle: it is converting correct-but-marginal predictions into correct-and-confident ones, which is precisely what the first term of Theorem 12.2.7 rewards. This is the same lesson as Chapter 10's: the complexity measure that grows with the number of parameters is the wrong choice, and a scale-sensitive measure — margins here, weight norms there — is the right one.
 
 The trade-off has not disappeared, it has moved into $\nu$: a larger $\nu$ shrinks the complexity term but makes the margin-violation term larger. The bound holds for all $\nu$ simultaneously (up to a union bound over a grid of $\nu$'s), so one may read it at whichever $\nu$ is most favorable for the ensemble actually obtained.
 
